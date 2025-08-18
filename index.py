@@ -1,11 +1,8 @@
 import sys
 import os
-
-# Critical SQLite3 fix must come first - with better error handling
 def setup_sqlite():
     """Setup SQLite with proper fallback handling"""
     try:
-        # Try to use pysqlite3 if available
         import pysqlite3
         sys.modules['sqlite3'] = sys.modules['pysqlite3']
         print("✅ Using pysqlite3 for ChromaDB compatibility")
@@ -15,57 +12,18 @@ def setup_sqlite():
         try:
             import sqlite3
             print(f"📊 System SQLite version: {sqlite3.sqlite_version}")
-            
-            # Check if system SQLite is compatible
             if sqlite3.sqlite_version_info >= (3, 35):
                 print("✅ System SQLite is compatible with ChromaDB")
-                # Set environment variable to use system SQLite
                 os.environ["CHROMA_DISABLE_SQLITE_BUILTIN"] = "1"
                 return True
             else:
                 print(f"❌ System SQLite {sqlite3.sqlite_version} is too old (need 3.35+)")
-                return False
+                print("Falling back to in-memory mode for ChromaDB")
+                os.environ["USE_MEMORY_MODE"] = "1"
+                return True
         except Exception as e:
             print(f"❌ Error checking SQLite: {e}")
             return False
-
-# Setup SQLite before importing anything else
-sqlite_ok = setup_sqlite()
-
-if not sqlite_ok:
-    print("\n" + "="*60)
-    print("🚨 SQLITE COMPATIBILITY ISSUE")
-    print("="*60)
-    print("Your system doesn't have a compatible SQLite version.")
-    print("To fix this, you have several options:")
-    print("\n1. Install pysqlite3-binary:")
-    print("   pip install pysqlite3-binary")
-    print("\n2. Or use the ChromaDB in-memory mode (for testing)")
-    print("="*60)
-
-# Now import everything else
-import streamlit as st
-
-# Only proceed if we have SQLite compatibility or user wants to continue anyway
-if not sqlite_ok:
-    st.error("""
-    🚨 **SQLite Compatibility Issue**
-    
-    Your system doesn't have a compatible SQLite version for ChromaDB.
-    
-    **To fix this:**
-    1. Install the compatible SQLite: `pip install pysqlite3-binary`
-    2. Then restart the application
-    
-    **Alternative:** Use in-memory mode (data won't persist between sessions)
-    """)
-    
-    if st.button("Continue with in-memory mode (not recommended)"):
-        # Set flag for in-memory mode
-        os.environ["USE_MEMORY_MODE"] = "1"
-        st.experimental_rerun()
-    else:
-        st.stop()
 
 # Import application modules with error handling
 try:
