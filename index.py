@@ -18,8 +18,13 @@ fix_sqlite()
 # Now import everything else
 import streamlit as st
 from app.loaders import load_and_chunk_pdf
-from app.vectorstore_simple import store_chunks, get_vectorstore, get_
-from app.chain import build_llm_chain, retrieve_hybrid_docs, rerank_do
+from app.vectorstore_simple import (
+    store_chunks, 
+    get_vectorstore, 
+    get_bm25_retriever,  # Add this
+    check_vectorstore_exists  # And this if needed
+)
+from app.chain import build_llm_chain, retrieve_hybrid_docs, rerank_documents
 from app.pdf_handler import upload_pdfs
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
