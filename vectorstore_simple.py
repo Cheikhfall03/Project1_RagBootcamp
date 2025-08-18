@@ -1,16 +1,13 @@
 import os
 import shutil
+import pickle
 from typing import List
 from langchain_core.documents import Document
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.retrievers import BM25Retriever
-import pysqlite3
-# Use the ChromaDB wrapper instead of direct import
-import sys
-__import__('pysqlite3')
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
-from chroma_wrapper_py import Chroma, Settings
+from langchain_community.vectorstores import FAISS
+
 # Try to import different embedding options
 try:
     from langchain_openai import OpenAIEmbeddings
@@ -25,8 +22,10 @@ try:
 except ImportError:
     HUGGINGFACE_AVAILABLE = False
 
-# Persistent directory for Chroma vectorstore
-PERSIST_DIR = "./chromastore"
+# Persistent directory for FAISS vectorstore
+PERSIST_DIR = "./faiss_store"
+FAISS_INDEX_FILE = os.path.join(PERSIST_DIR, "index.faiss")
+FAISS_PKL_FILE = os.path.join(PERSIST_DIR, "index.pkl")
 
 # Force CPU usage and disable CUDA
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
@@ -34,12 +33,13 @@ os.environ["NO_CUDA"] = "1"
 
 def check_vectorstore_exists() -> bool:
     """
-    Checks if the Chroma vectorstore exists in the persistent directory.
+    Checks if the FAISS vectorstore exists in the persistent directory.
     
     Returns:
         bool: True if vectorstore exists, False otherwise
     """
-    return os.path.exists(PERSIST_DIR) and len([f for f in os.listdir(PERSIST_DIR) if not f.startswith('.')]) > 0
+    return (os.path.exists(FAISS_INDEX_FILE) and 
+            os.path.exists(FAISS_PKL_FILE))
 
 def reset_vectorstore():
     """Reset the vectorstore by removing the directory"""
@@ -105,45 +105,51 @@ def create_embeddings():
     return FakeEmbeddings(size=384)
 
 def store_chunks(chunks: List[Document]):
-    """Stores document chunks in ChromaDB with embeddings."""
+    """Stores document chunks in FAISS with embeddings."""
     try:
         # Create embeddings
         embeddings = create_embeddings()
         if embeddings is None:
             raise Exception("Failed to create any embeddings model")
         
+        # Create the persist directory if it doesn't exist
+        os.makedirs(PERSIST_DIR, exist_ok=True)
+        
         # Check if vectorstore exists and is valid
         vectorstore_exists = check_vectorstore_exists()
         
         if vectorstore_exists:
             try:
-                print("📂 Loading existing vectorstore...")
-                vectorstore = Chroma(
-                    persist_directory=PERSIST_DIR,
-                    embedding_function=embeddings
+                print("📂 Loading existing FAISS vectorstore...")
+                vectorstore = FAISS.load_local(
+                    PERSIST_DIR, 
+                    embeddings,
+                    allow_dangerous_deserialization=True
                 )
-                # Test the connection
-                vectorstore._collection.count()
+                # Add new documents to existing vectorstore
                 vectorstore.add_documents(chunks)
+                # Save the updated vectorstore
+                vectorstore.save_local(PERSIST_DIR)
                 print(f"✅ Added {len(chunks)} chunks to existing vectorstore")
             except Exception as e:
                 print(f"❌ Error with existing vectorstore: {e}")
                 print("🔄 Resetting and creating new vectorstore...")
                 reset_vectorstore()
-                vectorstore = Chroma.from_documents(
+                os.makedirs(PERSIST_DIR, exist_ok=True)
+                vectorstore = FAISS.from_documents(
                     documents=chunks,
-                    embedding=embeddings,
-                    persist_directory=PERSIST_DIR
+                    embedding=embeddings
                 )
+                vectorstore.save_local(PERSIST_DIR)
                 print(f"✅ Created new vectorstore with {len(chunks)} chunks")
         else:
             # Create new vectorstore
-            print("🆕 Creating new vectorstore...")
-            vectorstore = Chroma.from_documents(
+            print("🆕 Creating new FAISS vectorstore...")
+            vectorstore = FAISS.from_documents(
                 documents=chunks,
-                embedding=embeddings,
-                persist_directory=PERSIST_DIR
+                embedding=embeddings
             )
+            vectorstore.save_local(PERSIST_DIR)
             print(f"✅ Created new vectorstore with {len(chunks)} chunks")
         
         return vectorstore
@@ -154,12 +160,13 @@ def store_chunks(chunks: List[Document]):
         try:
             print("🔄 Attempting to reset and recreate vectorstore...")
             reset_vectorstore()
+            os.makedirs(PERSIST_DIR, exist_ok=True)
             embeddings = create_embeddings()
-            vectorstore = Chroma.from_documents(
+            vectorstore = FAISS.from_documents(
                 documents=chunks,
-                embedding=embeddings,
-                persist_directory=PERSIST_DIR
+                embedding=embeddings
             )
+            vectorstore.save_local(PERSIST_DIR)
             print(f"✅ Successfully recreated vectorstore with {len(chunks)} chunks")
             return vectorstore
         except Exception as e2:
@@ -180,7 +187,7 @@ def get_bm25_retriever(chunks: List[Document]):
         return None
 
 def get_vectorstore():
-    """Loads existing Chroma vectorstore."""
+    """Loads existing FAISS vectorstore."""
     try:
         if not check_vectorstore_exists():
             print("❌ No existing vectorstore found")
@@ -190,15 +197,16 @@ def get_vectorstore():
         if embeddings is None:
             raise Exception("Failed to create embeddings model")
         
-        vectorstore = Chroma(
-            persist_directory=PERSIST_DIR,
-            embedding_function=embeddings
+        vectorstore = FAISS.load_local(
+            PERSIST_DIR, 
+            embeddings,
+            allow_dangerous_deserialization=True
         )
         
-        # Test the connection
+        # Test the connection by checking the number of documents
         try:
-            count = vectorstore._collection.count()
-            print(f"✅ Loaded existing vectorstore with {count} documents")
+            doc_count = vectorstore.index.ntotal
+            print(f"✅ Loaded existing FAISS vectorstore with {doc_count} documents")
             return vectorstore
         except Exception as e:
             print(f"❌ Vectorstore connection test failed: {e}")

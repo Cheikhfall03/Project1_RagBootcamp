@@ -1,25 +1,17 @@
 import sys
 import os
 
-# Fix SQLite3 compatibility for ChromaDB on Streamlit Cloud
-def fix_sqlite():
-    try:
-        # Try to import pysqlite3 and replace sqlite3 with it
-        __import__('pysqlite3')
-        sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
-        print("✅ Successfully replaced sqlite3 with pysqlite3")
-    except ImportError as e:
-        print(f"⚠️ Could not import pysqlite3: {e}")
-        print("Using system sqlite3 - this might cause issues with ChromaDB")
-
-# Run the SQLite fix immediately
-fix_sqlite()
 
 # Now import everything else
 import streamlit as st
 from app.loaders import load_and_chunk_pdf
-from app.vectorstore_simple import store_chunks, get_vectorstore, get_
-from app.chain import build_llm_chain, retrieve_hybrid_docs, rerank_do
+from app.vectorstore_simple import (
+    store_chunks, 
+    get_vectorstore, 
+    get_bm25_retriever,  # Add this
+    check_vectorstore_exists  # And this if needed
+)
+from app.chain import build_llm_chain, retrieve_hybrid_docs, rerank_documents
 from app.pdf_handler import upload_pdfs
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
@@ -310,7 +302,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 UPLOAD_DIR = "uploaded_files"
-PERSIST_DIR = "./chroma_store"
+#PERSIST_DIR = "./chroma_store"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # INITIALISATION DE L'ÉTAT STREAMLIT
@@ -330,12 +322,21 @@ if 'current_model_info' not in st.session_state:
         'reranker': 'Not Initialized'
     }
 
+# NOUVELLE LIGNE :
+PERSIST_DIR = "./faiss_store"
+
+# Dans la fonction update_model_info(), remplacez :
+# 'vector_db': 'ChromaDB',
+# PAR :
+# 'vector_db': 'FAISS',
+
+# Voici la fonction update_model_info() mise à jour complète :
 def update_model_info():
     """Met à jour les informations sur les modèles utilisés"""
     model_info = {
         'llm': 'Not Available',
         'embeddings': 'Not Available',
-        'vector_db': 'ChromaDB',
+        'vector_db': 'FAISS',  # ← Changement ici
         'reranker': 'Simple Ranking'
     }
     
@@ -374,7 +375,6 @@ def update_model_info():
     
     st.session_state.current_model_info = model_info
     return model_info
-
 def check_existing_vectorstore():
     """Vérifie si un vectorstore existe déjà"""
     return os.path.exists(PERSIST_DIR) and os.listdir(PERSIST_DIR)
