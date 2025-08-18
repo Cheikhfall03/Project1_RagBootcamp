@@ -1,5 +1,6 @@
 import sys
 import os
+import streamlit as st
 def setup_sqlite():
     """Setup SQLite with proper fallback handling"""
     try:
@@ -48,7 +49,7 @@ except ImportError as e:
     ```
     """)
     st.stop()
-import streamlit as st
+
 from app.loaders import load_and_chunk_pdf
 from app.vectorstore_simple import (
     store_chunks, 
