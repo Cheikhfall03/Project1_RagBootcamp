@@ -1,56 +1,9 @@
 import sys
 import os
-import pysqlite3
+
+
+# Now import everything else
 import streamlit as st
-def setup_sqlite():
-    """Setup SQLite with proper fallback handling"""
-    try:
-        import pysqlite3
-        sys.modules['sqlite3'] = sys.modules['pysqlite3']
-        print("✅ Using pysqlite3 for ChromaDB compatibility")
-        return True
-    except ImportError:
-        print("⚠️ pysqlite3 not found, trying system SQLite...")
-        try:
-            import sqlite3
-            print(f"📊 System SQLite version: {sqlite3.sqlite_version}")
-            if sqlite3.sqlite_version_info >= (3, 35):
-                print("✅ System SQLite is compatible with ChromaDB")
-                os.environ["CHROMA_DISABLE_SQLITE_BUILTIN"] = "1"
-                return True
-            else:
-                print(f"❌ System SQLite {sqlite3.sqlite_version} is too old (need 3.35+)")
-                print("Falling back to in-memory mode for ChromaDB")
-                os.environ["USE_MEMORY_MODE"] = "1"
-                return True
-        except Exception as e:
-            print(f"❌ Error checking SQLite: {e}")
-            return False
-
-# Import application modules with error handling
-try:
-    from app.loaders import load_and_chunk_pdf
-    from app.vectorstore_simple import (
-        store_chunks, 
-        get_vectorstore, 
-        get_bm25_retriever,
-        check_vectorstore_exists
-    )
-    from app.chain import build_llm_chain, retrieve_hybrid_docs, rerank_documents
-    from app.pdf_handler import upload_pdfs
-except ImportError as e:
-    st.error(f"""
-    🚨 **Module Import Error**
-    
-    Failed to import required modules: {str(e)}
-    
-    Please ensure all dependencies are installed:
-    ```
-    pip install -r requirements.txt
-    ```
-    """)
-    st.stop()
-
 from app.loaders import load_and_chunk_pdf
 from app.vectorstore_simple import (
     store_chunks, 
@@ -349,7 +302,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 UPLOAD_DIR = "uploaded_files"
-PERSIST_DIR = "./chroma_store"
+#PERSIST_DIR = "./chroma_store"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # INITIALISATION DE L'ÉTAT STREAMLIT
@@ -369,12 +322,21 @@ if 'current_model_info' not in st.session_state:
         'reranker': 'Not Initialized'
     }
 
+# NOUVELLE LIGNE :
+PERSIST_DIR = "./faiss_store"
+
+# Dans la fonction update_model_info(), remplacez :
+# 'vector_db': 'ChromaDB',
+# PAR :
+# 'vector_db': 'FAISS',
+
+# Voici la fonction update_model_info() mise à jour complète :
 def update_model_info():
     """Met à jour les informations sur les modèles utilisés"""
     model_info = {
         'llm': 'Not Available',
         'embeddings': 'Not Available',
-        'vector_db': 'ChromaDB',
+        'vector_db': 'FAISS',  # ← Changement ici
         'reranker': 'Simple Ranking'
     }
     
@@ -413,7 +375,6 @@ def update_model_info():
     
     st.session_state.current_model_info = model_info
     return model_info
-
 def check_existing_vectorstore():
     """Vérifie si un vectorstore existe déjà"""
     return os.path.exists(PERSIST_DIR) and os.listdir(PERSIST_DIR)
