@@ -13,3 +13,4 @@ python-dotenv
 rank-bm25
 pysqlite3
 chromadb>=0.4.15
+pysqlite3-binary>=0.4.6
