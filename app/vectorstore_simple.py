@@ -2,11 +2,12 @@ import os
 import shutil
 from typing import List
 from langchain_core.documents import Document
-from langchain_chroma import Chroma
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.retrievers import BM25Retriever
 
+# Use the ChromaDB wrapper instead of direct import
+from app.chroma_wrapper import Chroma, Settings
 # Try to import different embedding options
 try:
     from langchain_openai import OpenAIEmbeddings
