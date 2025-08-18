@@ -6,3 +6,9 @@ groq>=0.5.0
 pypdf>=4.1.0
 chromadb>=0.4.0
 sentence-transformers>=2.2.2
+langchain-text-splitters
+langchain-chroma
+langchain-groq
+pypdf
+python-dotenv
+rank-bm25
