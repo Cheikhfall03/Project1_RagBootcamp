@@ -12,4 +12,4 @@ langchain-groq
 pypdf
 python-dotenv
 rank-bm25
-sqlite3
+sqlite3 >= 3.35.0
