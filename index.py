@@ -2,18 +2,22 @@ import sys
 import os
 
 
+# Critical SQLite3 fix must come first
 try:
+    # Try to use pysqlite3 if available
     __import__('pysqlite3')
     sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 except ImportError:
-    # Fallback for systems where pysqlite3 won't install
+    # Fallback to system SQLite with version check
     import sqlite3
     if sqlite3.sqlite_version_info < (3, 35):
         raise RuntimeError(
             f"SQLite 3.35+ required (current: {sqlite3.sqlite_version}). "
-            "See https://docs.trychroma.com/troubleshooting#sqlite"
+            "See https://docs.trychroma.com/troubleshooting#sqlite\n"
+            "Try: pip install pysqlite3-binary"
         )
-
+    # Explicitly tell Chroma to use system SQLite
+    os.environ["CHROMA_DISABLE_SQLITE_BUILTIN"] = "1"
 # Now import everything else
 import streamlit as st
 from app.loaders import load_and_chunk_pdf
