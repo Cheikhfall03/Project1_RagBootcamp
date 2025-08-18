@@ -1,5 +1,6 @@
 import sys
 import os
+import pysqlite3
 import streamlit as st
 def setup_sqlite():
     """Setup SQLite with proper fallback handling"""
