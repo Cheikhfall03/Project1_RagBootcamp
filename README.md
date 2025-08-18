@@ -51,7 +51,7 @@ streamlit run index.py
 The app will open in your default web browser at:
 
 ```
-http://localhost:8501
+(https://project1ragbootcamp.streamlit.app/)
 ```
 
 If it doesn’t open automatically, copy and paste the URL from your terminal into your browser.
