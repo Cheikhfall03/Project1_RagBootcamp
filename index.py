@@ -1,19 +1,18 @@
 import sys
 import os
 
-# Fix SQLite3 compatibility for ChromaDB on Streamlit Cloud
-def fix_sqlite():
-    try:
-        # Try to import pysqlite3 and replace sqlite3 with it
-        __import__('pysqlite3')
-        sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
-        print("✅ Successfully replaced sqlite3 with pysqlite3")
-    except ImportError as e:
-        print(f"⚠️ Could not import pysqlite3: {e}")
-        print("Using system sqlite3 - this might cause issues with ChromaDB")
 
-# Run the SQLite fix immediately
-fix_sqlite()
+try:
+    __import__('pysqlite3')
+    sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+except ImportError:
+    # Fallback for systems where pysqlite3 won't install
+    import sqlite3
+    if sqlite3.sqlite_version_info < (3, 35):
+        raise RuntimeError(
+            f"SQLite 3.35+ required (current: {sqlite3.sqlite_version}). "
+            "See https://docs.trychroma.com/troubleshooting#sqlite"
+        )
 
 # Now import everything else
 import streamlit as st
