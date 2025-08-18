@@ -1,14 +1,14 @@
-streamlit>=1.32.0
+
 python-dotenv>=1.0.0
-langchain>=0.1.0
-langchain-community
 groq>=0.5.0
 pypdf>=4.1.0
 sentence-transformers>=2.2.2
 langchain-text-splitters
-langchain-chroma
 langchain-groq
 pypdf
 python-dotenv
 rank-bm25
-faiss-cpu
+faiss-cpu==1.7.4
+langchain-core==0.1.11  # Version minimale sans Chroma
+langchain-community==0.0.29  # Pour les intégrations
+streamlit==1.48.1
