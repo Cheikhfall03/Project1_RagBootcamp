@@ -7,6 +7,9 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.retrievers import BM25Retriever
 
 # Use the ChromaDB wrapper instead of direct import
+import sys
+__import__('pysqlite3')
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 from chroma_wrapper_py import Chroma, Settings
 # Try to import different embedding options
 try:
