@@ -12,3 +12,4 @@ langchain-groq
 pypdf
 python-dotenv
 rank-bm25
+sqlite3
