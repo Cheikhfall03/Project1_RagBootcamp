@@ -5,7 +5,7 @@ from langchain_core.documents import Document
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.retrievers import BM25Retriever
-
+import pysqlite3
 # Use the ChromaDB wrapper instead of direct import
 import sys
 __import__('pysqlite3')
