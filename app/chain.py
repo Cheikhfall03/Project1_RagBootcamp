@@ -5,9 +5,9 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from app.vectorstore_simple import store_chunks, get_vectorstore, get_bm25_retriever
 from langchain.retrievers import EnsembleRetriever
-from langchain_community.cross_encoders import HuggingFaceCrossEncoder
+#from langchain_community.cross_encoders import HuggingFaceCrossEncoder
 from sentence_transformers import CrossEncoder
-from langchain.retrievers.document_compressors import CrossEncoderReranker
+#from langchain.retrievers.document_compressors import CrossEncoderReranker
 from app.config import GROQ_API_KEY
 
 
