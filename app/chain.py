@@ -103,7 +103,7 @@ def build_llm_chain():
 
     # Set up Groq's LLaMA 3 model with streaming enabled
     llm = ChatGroq(
-        model="llama3-8b-8192",
+        model="gemma2-9b-it",
         api_key=GROQ_API_KEY,
         streaming=True
     )
